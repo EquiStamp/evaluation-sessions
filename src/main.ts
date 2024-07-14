@@ -38,13 +38,12 @@ const runEvalSession = async (c: Context): Promise<Data | undefined> => {
         commitStatusId: c.commitStatusId || 'evaluation-session-runner'
       })
     })
-    core.setOutput(
-      'evaluation-session-id',
-      typeof res === 'string' ? res : res?.id
-    )
+    if (res && typeof res !== 'string') {
+      core.setOutput('evaluation-session-id', res?.id)
+      core.setOutput('evaluation-session-report', res?.report_link)
+    }
     return res
   } catch (e) {
-    console.log(e)
     core.setFailed(`Could not start evaluation session: ${e}`)
   }
   return undefined
