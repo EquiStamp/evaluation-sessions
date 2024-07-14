@@ -1,4 +1,4 @@
-name: Manual test actions - local version
+name: Manual test actions - deployed version
 
 on:
   workflow_dispatch: # allow manual triggering
@@ -29,7 +29,7 @@ permissions:
   contents: read
 
 jobs:
-  test-local-action:
+  test-deployed-action:
     name: Test action
     runs-on: ubuntu-latest
 
@@ -40,7 +40,7 @@ jobs:
 
       - name: Test Local Action
         id: test-action
-        uses: ./
+        uses: EquiStamp/evaluation-sessions@latest
         with:
           command: ${{ inputs.command }}
           evaluation: ${{ inputs.evaluation }}
