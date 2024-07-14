@@ -24951,20 +24951,75 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(2186));
-const wait_1 = __nccwpck_require__(5259);
+const server_1 = __nccwpck_require__(6660);
+const makeCallback = ({ commitStatusId, repo, commit, githubKey }) => {
+    if (!repo || !githubKey || !commit)
+        return undefined;
+    const code = `
+(POST(str "https://api.github.com/repos/${repo}/statuses/${commit}")
+         {:headers {"X-GitHub-Api-Version" "2022-11-28"
+                    "Accept" "application/vnd.github+json"
+                    "Authorization"(str "Bearer ${githubKey}")}
+          :json {"state"(if success "success" "failure"),
+                 "target_url" report
+                 "description"(if success "Evaluation session successful" "Evaluation session failed")
+                "context" ${commitStatusId})`;
+    return [{ method: 'webhook', destination: code }];
+};
+const runEvalSession = async (c) => {
+    try {
+        const res = await (0, server_1.Post)(c, '/evaluationsession', {
+            origin: 'user',
+            evaluation_id: c.evaluationId,
+            evaluatee_id: c.modelId,
+            is_human_being_evaluated: false,
+            notify: makeCallback({
+                ...c,
+                commitStatusId: c.commitStatusId || 'evaluation-session-runner'
+            })
+        });
+        core.setOutput('evaluation-session-id', typeof res === 'string' ? res : res?.id);
+        return res;
+    }
+    catch (e) {
+        core.setFailed(`Could not start evaluation session: ${e}`);
+    }
+    return undefined;
+};
+const commands = {
+    run: runEvalSession
+};
+const makeContext = () => {
+    const command = core.getInput('command');
+    if (!['run'].includes(command)) {
+        throw new Error('Invalid command provided');
+    }
+    return {
+        command: command,
+        apiToken: core.getInput('api-token'),
+        evaluationId: core.getInput('evaluation'),
+        modelId: core.getInput('model'),
+        host: core.getInput('host') || 'https://equistamp.net',
+        githubKey: core.getInput('github-key'),
+        repo: core.getInput('repository'),
+        commit: core.getInput('commit'),
+        commitStatusId: core.getInput('commit-status-id')
+    };
+};
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
     try {
-        const ms = core.getInput('milliseconds');
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
+        const context = makeContext();
+        const func = commands[context.command];
+        if (!func) {
+            core.setFailed(`Invalid command provided. Must be one of ${Object.keys(commands).sort()}`);
+            return;
+        }
+        const res = await func(context);
+        core.debug(res?.toString() || 'nothing returned');
         // Set outputs for other workflow steps to use
         core.setOutput('time', new Date().toTimeString());
     }
@@ -24978,26 +25033,72 @@ async function run() {
 
 /***/ }),
 
-/***/ 5259:
+/***/ 6660:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = wait;
-/**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
-        }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
+exports.Delete = exports.Put = exports.Post = exports.Get = exports.query = exports.ServerError = void 0;
+class ServerError extends Error {
+    status;
+    error;
+    constructor(status, error) {
+        super();
+        this.status = status;
+        this.error = error;
+    }
 }
+exports.ServerError = ServerError;
+const paramsString = (params) => {
+    if (!params)
+        return '';
+    const vals = Object.entries(params)
+        .filter(([k, v]) => k && v !== undefined && v !== null)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('&');
+    return `?${vals}`;
+};
+const query = async ({ host, apiToken }, callEndpoint, data, callMethod) => {
+    const method = callMethod || 'GET';
+    const endpoint = ['GET', 'DELETE'].includes(method)
+        ? callEndpoint + paramsString(data)
+        : callEndpoint;
+    const body = ['POST', 'PUT'].includes(method)
+        ? data && JSON.stringify(data)
+        : undefined;
+    const getContents = async (resp) => {
+        const contentType = resp.headers.get('Content-Type') || 'application/json';
+        if (contentType === 'application/json') {
+            return resp.json();
+        }
+        else if (contentType === 'text/csv') {
+            return resp.blob();
+        }
+        return resp.text();
+    };
+    const resp = await fetch(`${host}${endpoint}`, {
+        method,
+        body,
+        headers: {
+            'Content-Type': 'application/json',
+            'API-Token': apiToken
+        }
+    });
+    if (!resp.ok) {
+        throw new ServerError(resp.status, await getContents(resp));
+    }
+    return getContents(resp);
+};
+exports.query = query;
+const Get = async (context, endpoint, params) => (0, exports.query)(context, endpoint, params);
+exports.Get = Get;
+const Post = async (context, endpoint, data) => (0, exports.query)(context, endpoint, data, 'POST');
+exports.Post = Post;
+const Put = async (context, endpoint, data) => (0, exports.query)(context, endpoint, data, 'PUT');
+exports.Put = Put;
+const Delete = async (context, endpoint, params) => (0, exports.query)(context, endpoint, params, 'DELETE');
+exports.Delete = Delete;
 
 
 /***/ }),

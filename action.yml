@@ -1,23 +1,57 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Evaluation tools'
+description: 'Tools to start and manage Equistamp evaluations'
+author: 'Equistamp'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
-  color: 'red'
+  icon: 'activity'
+  color: 'green'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
+  command:
+    description: |
+      The action to be taken. The following actions are supported:
+        * run - start a new evaluation session with on the provided evaluation and model
 
-# Define your outputs here.
+      If you want to run this asynchronously, you can also configure this tool to set an appropriate
+      commit status. To do so, you will have to provide:
+        * your repository (as "<owner>/<repo>", e.g. "mySuperOrg/myRepo")
+        * the full SHA of the commit to set the status on
+        * a github key used to send the appropriate requests
+
+  api-token:
+    description: 'Your Equistamp API token'
+    required: true
+  evaluation:
+    description: 'The id of the evaluation you want to use'
+    required: false
+  model:
+    description: 'The id of the model you want to use'
+    required: false
+  host:
+    description: 'The Equistamp server URL'
+    required: false
+    default: 'https://equistamp.net'
+
+  github-key:
+    description: 'A github API key with commits write access'
+    required: false
+  repository:
+    description: 'The repository to be used when setting commit statuses'
+    required: false
+  commit:
+    description: 'The full SHA of the commit for which the status should be set'
+    required: false
+  commit-status-id:
+    description: 'An optional identifier for the resulting comment status'
+    required: false
+
 outputs:
-  time:
-    description: 'Your output description here'
+  evaluation-session-id:
+    description: 'The id of any started evaluation session'
+  evaluation-session-report:
+    description: 'The URL of the report of any started evaluation session'
 
 runs:
   using: node20
