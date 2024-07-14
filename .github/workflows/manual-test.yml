@@ -1,0 +1,58 @@
+name: Manual test actions
+
+on:
+  workflow_dispatch: # allow manual triggering
+    inputs:
+      command:
+        description: 'The command to run'
+        type: choice
+        options:
+          - run
+      apiToken:
+        description: 'The Equistamp API token'
+        required: true
+        type: string
+      evaluation:
+        description: 'The evaluation to use'
+        type: string
+        default: '31a11c91-9a5e-478b-982c-a695f9ef9045'
+      model:
+        description: 'The evaluation to use'
+        type: string
+        default: 'c65c537b-ef17-47db-9edc-3b191634da0c'
+      commitStatusId:
+        description:
+          'What should be displayed on github as the result of the callback'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test-action:
+    name: Test action
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Test Local Action
+        id: test-action
+        uses: ./
+        with:
+          command: ${{ inputs.command }}
+          evaluation: ${{ inputs.evaluation }}
+          model: ${{ inputs.model }}
+          host: 'https://equistamp.io'
+          api-token: ${{ inputs.apiToken }}
+
+          commit: ${{github.sha || github.event.pull_request.head.sha }}
+          repository: ${{ github.sha || github.event.pull_request.head.sha }}
+          github-key: 'asd'
+          commit-status-id: ${{ inputs.commitStatusId }}
+
+      - name: Print Output
+        id: output
+        run: echo "${{ steps.test-action.outputs.time }}"

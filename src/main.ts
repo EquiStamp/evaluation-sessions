@@ -44,6 +44,7 @@ const runEvalSession = async (c: Context): Promise<Data | undefined> => {
     )
     return res
   } catch (e) {
+    console.log(e)
     core.setFailed(`Could not start evaluation session: ${e}`)
   }
   return undefined

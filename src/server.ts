@@ -49,7 +49,7 @@ export const query = async (
     body,
     headers: {
       'Content-Type': 'application/json',
-      'API-Token': apiToken
+      'api-token': apiToken
     }
   })
   if (!resp.ok) {

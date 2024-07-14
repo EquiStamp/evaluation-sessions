@@ -24982,6 +24982,7 @@ const runEvalSession = async (c) => {
         return res;
     }
     catch (e) {
+        console.log(e);
         core.setFailed(`Could not start evaluation session: ${e}`);
     }
     return undefined;
@@ -25082,7 +25083,7 @@ const query = async ({ host, apiToken }, callEndpoint, data, callMethod) => {
         body,
         headers: {
             'Content-Type': 'application/json',
-            'API-Token': apiToken
+            'api-token': apiToken
         }
     });
     if (!resp.ok) {
