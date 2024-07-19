@@ -20,6 +20,23 @@ const paramsString = (params?: Data): string => {
   return `?${vals}`
 }
 
+const retryFetch = async (
+  url: string,
+  options: RequestInit = {},
+  maxRetries = 3
+): Promise<Response> => {
+  for (let retries = 0; retries < maxRetries; retries++) {
+    try {
+      const response = await fetch(url, options)
+      if (response.status !== 504) return response
+    } catch (error) {
+      const delay = Math.pow(2, retries) * 1000
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  throw new Error('Max retries reached')
+}
+
 export const query = async (
   { host, apiToken }: Context,
   callEndpoint: string,
@@ -44,7 +61,7 @@ export const query = async (
     return resp.text()
   }
 
-  const resp = await fetch(`${host}${endpoint}`, {
+  const resp = await retryFetch(`${host}${endpoint}`, {
     method,
     body,
     headers: {

@@ -24955,19 +24955,36 @@ const server_1 = __nccwpck_require__(6660);
 const makeCallback = ({ commitStatusId, repo, commit, githubKey }) => {
     if (!repo || !githubKey || !commit)
         return undefined;
-    const code = `
-(POST(str "https://api.github.com/repos/${repo}/statuses/${commit}")
+    const code = `(POST (str "https://api.github.com/repos/${repo}/statuses/${commit}")
          {:headers {"X-GitHub-Api-Version" "2022-11-28"
                     "Accept" "application/vnd.github+json"
-                    "Authorization"(str "Bearer ${githubKey}")}
-          :json {"state"(if success "success" "failure"),
+                    "Authorization" (str "Bearer ${githubKey}")}
+          :json {"state" (if success "success" "failure")
                  "target_url" report
-                 "description"(if success "Evaluation session successful" "Evaluation session failed")
-                "context" ${commitStatusId})`;
+                 "description" (if success "Evaluation session successful" "Evaluation session failed")
+                 "context" "${commitStatusId}"}})`;
     return [{ method: 'webhook', destination: code }];
+};
+const setGHStatus = async (payload, { repo, commit, githubKey }) => {
+    const res = await fetch(`https://api.github.com/repos/${repo}/statuses/${commit}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+            'X-GitHub-Api-Version': '2022-11-28',
+            Accept: 'application/vnd.github+json',
+            Authorization: `Bearer ${githubKey}`
+        }
+    });
+    if (res.status > 299) {
+        core.setFailed(`Could not set status: ${res.status} ${await res.text()}`);
+        return res;
+    }
+    core.info(`Set gtihub status for job`);
+    return res;
 };
 const runEvalSession = async (c) => {
     try {
+        core.info(`Starting evaluation session`);
         const res = await (0, server_1.Post)(c, '/evaluationsession', {
             origin: 'user',
             evaluation_id: c.evaluationId,
@@ -24978,13 +24995,32 @@ const runEvalSession = async (c) => {
                 commitStatusId: c.commitStatusId || 'evaluation-session-runner'
             })
         });
-        if (res && typeof res !== 'string') {
+        const started = res && typeof res !== 'string';
+        const report_link = started ? res.report_link : null;
+        if (started) {
+            core.info(`Started evaluation session: ${report_link}`);
             core.setOutput('evaluation-session-id', res?.id);
-            core.setOutput('evaluation-session-report', res?.report_link);
+            core.setOutput('evaluation-session-report', report_link);
+        }
+        else {
+            core.info(`Could not start eval session: ${res}`);
+        }
+        if (c.repo && c.githubKey && c.commit) {
+            const payload = {
+                target_url: report_link || null,
+                context: c.commitStatusId || 'evaluation-session-runner',
+                state: started ? 'pending' : 'error',
+                description: 'Evaluation session started'
+            };
+            await setGHStatus(payload, c);
         }
         return res;
     }
     catch (e) {
+        if (e instanceof server_1.ServerError) {
+            core.info(`error: ${JSON.stringify(e.error)}`);
+            core.info(`status code: ${e.status}`);
+        }
         core.setFailed(`Could not start evaluation session: ${e}`);
     }
     return undefined;
@@ -25062,6 +25098,20 @@ const paramsString = (params) => {
         .join('&');
     return `?${vals}`;
 };
+const retryFetch = async (url, options = {}, maxRetries = 3) => {
+    for (let retries = 0; retries < maxRetries; retries++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.status !== 504)
+                return response;
+        }
+        catch (error) {
+            const delay = Math.pow(2, retries) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    throw new Error('Max retries reached');
+};
 const query = async ({ host, apiToken }, callEndpoint, data, callMethod) => {
     const method = callMethod || 'GET';
     const endpoint = ['GET', 'DELETE'].includes(method)
@@ -25080,7 +25130,7 @@ const query = async ({ host, apiToken }, callEndpoint, data, callMethod) => {
         }
         return resp.text();
     };
-    const resp = await fetch(`${host}${endpoint}`, {
+    const resp = await retryFetch(`${host}${endpoint}`, {
         method,
         body,
         headers: {
