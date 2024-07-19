@@ -38,7 +38,7 @@ jobs:
         id: checkout
         uses: actions/checkout@v4
 
-      - name: Test Local Action
+      - name: Test Deployed Action
         id: test-action
         uses: EquiStamp/evaluation-sessions@latest
         with:
@@ -49,8 +49,8 @@ jobs:
           api-token: ${{ inputs.apiToken }}
 
           commit: ${{github.sha || github.event.pull_request.head.sha }}
-          repository: ${{ github.sha || github.event.pull_request.head.sha }}
-          github-key: 'asd'
+          repository: ${{ github.repository }}
+          github-key: ${{ secrets.gh_key }}
           commit-status-id: ${{ inputs.commitStatusId }}
 
       - name: Print Output

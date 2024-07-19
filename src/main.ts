@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {} from '@actions/github'
 import type { Command, CommandType, Context, Data } from './types'
-import { Post } from './server'
+import { Post, ServerError } from './server'
 
 type Notification = {
   method: 'email' | 'webhook'
@@ -14,20 +14,50 @@ const makeCallback = ({
   githubKey
 }: Context): Notification[] | undefined => {
   if (!repo || !githubKey || !commit) return undefined
-  const code = `
-(POST(str "https://api.github.com/repos/${repo}/statuses/${commit}")
+  const code = `(POST (str "https://api.github.com/repos/${repo}/statuses/${commit}")
          {:headers {"X-GitHub-Api-Version" "2022-11-28"
                     "Accept" "application/vnd.github+json"
-                    "Authorization"(str "Bearer ${githubKey}")}
-          :json {"state"(if success "success" "failure"),
+                    "Authorization" (str "Bearer ${githubKey}")}
+          :json {"state" (if success "success" "failure")
                  "target_url" report
-                 "description"(if success "Evaluation session successful" "Evaluation session failed")
-                "context" ${commitStatusId})`
+                 "description" (if success "Evaluation session successful" "Evaluation session failed")
+                 "context" "${commitStatusId}"}})`
   return [{ method: 'webhook', destination: code }]
+}
+
+type Comment = {
+  context: string
+  target_url: string | null
+  state: 'pending' | 'error' | 'failure' | 'success'
+  description: string
+}
+const setGHStatus = async (
+  payload: Comment,
+  { repo, commit, githubKey }: Context
+): Promise<Response> => {
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/statuses/${commit}`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28',
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${githubKey}`
+      }
+    }
+  )
+  if (res.status > 299) {
+    core.setFailed(`Could not set status: ${res.status} ${await res.text()}`)
+    return res
+  }
+  core.info(`Set gtihub status for job`)
+  return res
 }
 
 const runEvalSession = async (c: Context): Promise<Data | undefined> => {
   try {
+    core.info(`Starting evaluation session`)
     const res = await Post(c, '/evaluationsession', {
       origin: 'user',
       evaluation_id: c.evaluationId,
@@ -38,12 +68,31 @@ const runEvalSession = async (c: Context): Promise<Data | undefined> => {
         commitStatusId: c.commitStatusId || 'evaluation-session-runner'
       })
     })
-    if (res && typeof res !== 'string') {
+    const started = res && typeof res !== 'string'
+    const report_link = started ? res.report_link : null
+    if (started) {
+      core.info(`Started evaluation session: ${report_link}`)
       core.setOutput('evaluation-session-id', res?.id)
-      core.setOutput('evaluation-session-report', res?.report_link)
+      core.setOutput('evaluation-session-report', report_link)
+    } else {
+      core.info(`Could not start eval session: ${res}`)
+    }
+
+    if (c.repo && c.githubKey && c.commit) {
+      const payload = {
+        target_url: report_link || null,
+        context: c.commitStatusId || 'evaluation-session-runner',
+        state: started ? 'pending' : 'error',
+        description: 'Evaluation session started'
+      } as Comment
+      await setGHStatus(payload, c)
     }
     return res
   } catch (e) {
+    if (e instanceof ServerError) {
+      core.info(`error: ${JSON.stringify(e.error)}`)
+      core.info(`status code: ${e.status}`)
+    }
     core.setFailed(`Could not start evaluation session: ${e}`)
   }
   return undefined
