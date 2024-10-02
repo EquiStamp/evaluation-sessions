@@ -10,7 +10,9 @@ assignees: ''
 ### Task Errors
 
 **What needs to be done?**
-Refer to this google sheet for the task errors that we have found for this specific task: [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/edit?userstoinvite=sami%40metr.org&sharingaction=manageaccess&role=writer&gid=323653529#gid=323653529)
+Refer to this google sheet for the task errors that we have found for this specific task: [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/edit?userstoinvite=sami%40metr.org&sharingaction=manageaccess&role=writer&gid=323653529#gid=323653529).
+
+**Please track your time working on this down to the minute**
 
 ### Business Driver
 
@@ -30,6 +32,8 @@ Please check the google sheet and also answer the following questions in the com
 - [ ] Does the docker container start? If not, fix it.
 - [ ] Does the task run with viv? If not, fix it.
 - [ ] Does the task have a descriptive README.md in the correct format? If not, fix it.
+- [ ] Open a PR with your changes.
+- [ ] Add time spent to comments on ticket
 
 ### Acceptance Criteria
 
