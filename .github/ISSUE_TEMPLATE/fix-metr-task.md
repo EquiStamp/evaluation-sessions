@@ -35,6 +35,7 @@ Please check the google sheet and also answer the following questions in the com
 - [ ] Open a PR with your changes.
 - [ ] Add time spent to comments on ticket
 
+
 ### Acceptance Criteria
 
 **How will a reviewer determine that work is complete?**
