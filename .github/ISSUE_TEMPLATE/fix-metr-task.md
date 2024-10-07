@@ -23,7 +23,7 @@ We want to fix tasks that currently have errors so that METR will have as much c
 
 **What are the high level steps to resolve this issue?**
 
-Please check the google sheet to make sure you broke what we detected as broken. Run through this checklist as well and make sure the task is structured correctly and not broken:
+Please check the google sheet to make sure you fix what we detected as broken. Run through this checklist as well and make sure the task is structured correctly and not broken:
 
 - [ ] Check the [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/) and note the errors listed and make a comment on this issue about what errors we need to fix. Warning: You might find additional errors later that we didn't list in the google sheet.
 - [ ] Does the task have task family structure? If not, modify the task to have the correct structure.
@@ -32,9 +32,9 @@ Please check the google sheet to make sure you broke what we detected as broken.
 - [ ] Can the tasks be graded properly? If it doesn't have automatic grading, add a scoring function.
 - [ ] Does the docker container start? If not, fix it.
 - [ ] Does the task run with viv? If not, fix it.
-- [ ] Does the task have a meta folder that has a summary.md inside meta? if not could you make a [summary.md with this foramt](https://github.com/EquiStamp/metr-task-template/blob/main/meta/summary.md)?
-- [ ] Does the task have a meta folder that has a detail.md inside meta? if not could you make a [detail.md with this foramt](https://github.com/EquiStamp/metr-task-template/blob/main/meta/detail.md)?
-- [ ] Does the task have a meta folder that has a eval-info.json inside meta? if not could you a [eval-info.json with this foramt](https://github.com/EquiStamp/metr-task-template/blob/main/meta/eval_info.json)?
+- [ ] Does the task have a meta folder that has a summary.md inside meta? if not could you make a [summary.md with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/summary.md)?
+- [ ] Does the task have a meta folder that has a detail.md inside meta? if not could you make a [detail.md with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/detail.md)?
+- [ ] Does the task have a meta folder that has a eval-info.json inside meta? if not could you a [eval-info.json with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/eval_info.json)?
 - [ ] Open a PR with your changes.
 - [ ] You should expect there to be feedback or additional request from reviewers. Please implement their feedback.
 - [ ] Add total time spent to comments on this github issue.
