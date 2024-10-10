@@ -37,6 +37,7 @@ Please check the google sheet to make sure you fix what we detected as broken. R
 - [ ] Does the task have a meta folder that has a eval-info.json inside meta? if not could you a [eval-info.json with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/eval_info.json)?
 - [ ] Open a PR with your changes.
 - [ ] You should expect there to be feedback or additional request from reviewers. Please implement their feedback.
+- [ ] Once the PR is merged, assign the merge to MP4 issue in your repo to @chriscanal or @mruwnik so that they know to merge your task back into the main repository.
 - [ ] Add total time spent to comments on this github issue.
 
 
