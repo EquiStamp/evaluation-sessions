@@ -12,6 +12,8 @@ assignees: ''
 **What needs to be done?**
 Refer to this google sheet for the task errors that we have found for this specific task: [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/).
 
+Not all tasks are worth keeping. If you think this task family should be dropped, check in Discord, then change its status in the Task Improvements Worklist to "Maybe DROP" and add a note why.
+
 **Please track your time working on this down to the minute**
 
 ### Business Driver
@@ -28,7 +30,7 @@ Please check the google sheet to make sure you fix what we detected as broken. R
 - [ ] Check the [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/) and note the errors listed and make a comment on this issue about what errors we need to fix. Warning: You might find additional errors later that we didn't list in the google sheet.
 - [ ] Does the task have task family structure? If not, modify the task to have the correct structure.
 - [ ] Does the task have a task manifest file? If not, create one.
-- [ ] Does it have pytest? If not, add at least one test that seems relevant.
+- [ ] Does it have pytest tests? If not, add at least one test that seems relevant.
 - [ ] Can the tasks be graded properly? If it doesn't have automatic grading, add a scoring function.
 - [ ] Does the docker container start? If not, fix it.
 - [ ] Does the task run with viv? If not, fix it.
