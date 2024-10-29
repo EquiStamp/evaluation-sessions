@@ -2,7 +2,7 @@
 name: Customer Relations Work
 about: Use this issue template for  work that involves communicating with customers
 title: "[CRM] Descriptive title"
-labels: customer relations
+labels: ["customer relations", "charge-to-equistamp"]
 assignees: ''
 
 ---
@@ -27,3 +27,5 @@ assignees: ''
 ### Resolution Criteria Evaluator
 **Write the name of the person who evaluated that this issue was resolved:**
 [NAME]
+
+TOTAL TIME SPENT ON THIS ISSUE BY ASSIGNEE = HH:MM

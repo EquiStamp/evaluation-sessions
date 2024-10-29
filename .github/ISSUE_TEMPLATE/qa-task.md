@@ -2,7 +2,7 @@
 name: METR Quality Assurance
 about: Use this template for METR tasks that require QA checks
 title: "[QA] QA Check for METR Task [NAME]"
-labels: quality-assurance
+labels: ["charge-to-metr", "quality-assurance"]
 assignees: ''
 
 ---
@@ -39,3 +39,5 @@ Ensure the integrity and effectiveness of METR tasks by identifying and rectifyi
 ### Resolution Criteria Evaluator
 **Write the name of the person who evaluated that this issue was resolved:**
 [NAME]
+
+TOTAL TIME SPENT ON THIS ISSUE BY ASSIGNEE = HH:MM

@@ -48,3 +48,5 @@ All the items in the list above are checked off.
 ### Resolution Criteria Evaluator
 **Write the name of the person who evaluated that this issue was resolved:**
 [ @chriscanal ]
+
+TOTAL TIME SPENT ON THIS ISSUE BY ASSIGNEE = HH:MM

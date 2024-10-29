@@ -2,7 +2,7 @@
 name: Fix METR Task
 about: Use this issue template to fix a METR task.
 title: "[FIX-METR-TASK][$100] Name of Task Family Directory"
-labels: admin
+labels: ["charge-to-metr", "task-fix"]
 assignees: ''
 
 ---
@@ -57,3 +57,5 @@ The assignee has answered all the requirements and shown proof in a PR that the 
 
 **Write the name of the person who evaluated that this issue was resolved:**
 [@chriscanal]
+
+TOTAL TIME SPENT ON THIS ISSUE BY ASSIGNEE = HH:MM
