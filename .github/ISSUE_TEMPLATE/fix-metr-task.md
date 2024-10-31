@@ -29,14 +29,12 @@ Please check the google sheet to make sure you fix what we detected as broken. R
 
 - [ ] Check the [Task Improvements Worklist](https://docs.google.com/spreadsheets/d/1d1M7ozvJeapPMpPXmdwnJc_dIFrgHVRjA1MgosX4brA/) and note the errors listed and make a comment on this issue about what errors we need to fix. Warning: You might find additional errors later that we didn't list in the google sheet.
 - [ ] Does the task have task family structure? If not, modify the task to have the correct structure.
+- [ ] Does `get_tasks` work without the container (i.e. can you run `from task_family import TaskFamily; TaskFamily.get_tasks()` locally)? If not set up any required files.
 - [ ] Does the task have a task manifest file? If not, create one.
 - [ ] Does it have pytest tests? If not, add at least one test that seems relevant.
 - [ ] Can the tasks be graded properly? If it doesn't have automatic grading, add a scoring function.
 - [ ] Does the docker container start? If not, fix it.
 - [ ] Does the task run with viv? If not, fix it.
-- [ ] Does the task have a meta folder that has a summary.md inside meta? if not could you make a [summary.md with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/summary.md)?
-- [ ] Does the task have a meta folder that has a detail.md inside meta? if not could you make a [detail.md with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/detail.md)?
-- [ ] Does the task have a meta folder that has a eval-info.json inside meta? if not could you a [eval-info.json with this format](https://github.com/EquiStamp/metr-task-template/blob/main/meta/eval_info.json)?
 - [ ] Open a PR with your changes.
 - [ ] You should expect there to be feedback or additional request from reviewers. Please implement their feedback.
 - [ ] Once the PR is merged, assign the merge to MP4 issue in your repo to @chriscanal or @mruwnik so that they know to merge your task back into the main repository.
