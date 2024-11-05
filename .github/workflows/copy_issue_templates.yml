@@ -30,7 +30,7 @@ jobs:
         id: get-org-repos
         run: |
           echo "Fetching repositories for EquiStamp..."
-          repos=$(gh repo list EquiStamp --limit 1000 --json name,defaultBranchRef --jq '[.[] | select(.name != "metr-task-template") | {name: .name, default_branch: .defaultBranchRef.name}]')
+          repos=$(gh repo list EquiStamp --limit 1000 --json name,defaultBranchRef --jq '[.[] | select(.name | ascii_downcase | contains("equistamp") | not) | select(.name != "metr-task-template") | {name: .name, default_branch: .defaultBranchRef.name}]')
           echo "repos=$repos" >> $GITHUB_OUTPUT
 
   copy-issue-templates:
