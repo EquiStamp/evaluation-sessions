@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  run-linter:
     runs-on: ubuntu-latest
 
     steps:
