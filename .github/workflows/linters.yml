@@ -21,5 +21,8 @@ jobs:
     - name: Install dependencies
       run: pip install pyright
 
-    - name: Run tests
-      run: pyright ${{ repo_name }}.py
+    - name: Run linter
+      run: ls
+
+    - name: Run linter
+      run: pyright ${{ github.event.repository.name }}.py
