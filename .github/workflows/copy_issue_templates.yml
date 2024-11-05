@@ -1,0 +1,96 @@
+name: Copy Issue Templates and workflows to All Repos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+
+permissions:
+  contents: write
+
+jobs:
+  get-org-repos:
+    if: ${{ github.repository == 'EquiStamp/metr-task-template' }}
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{ steps.get-org-repos.outputs.repos }}
+    steps:
+      - name: Ensure this is the source repository
+        if: ${{ github.repository != 'EquiStamp/metr-task-template' }}
+        run: |
+          echo "This is not the source repository. Exiting."
+          exit 0
+
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.EQUISTAMP_ADMIN_GITHUB_SECRET }}" | gh auth login --with-token
+
+      - name: Fetch list of repositories
+        id: get-org-repos
+        run: |
+          echo "Fetching repositories for EquiStamp..."
+          repos=$(gh repo list EquiStamp --limit 1000 --json name,defaultBranchRef --jq '[.[] | select(.name != "metr-task-template") | {name: .name, default_branch: .defaultBranchRef.name}]')
+          echo "repos=$repos" >> $GITHUB_OUTPUT
+
+  copy-issue-templates:
+    if: ${{ github.repository == 'EquiStamp/metr-task-template' }}
+    needs: get-org-repos
+    runs-on: ubuntu-latest
+    env:
+      ADMIN_GITHUB_TOKEN: ${{ secrets.EQUISTAMP_ADMIN_GITHUB_SECRET }}
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.get-org-repos.outputs.repos) }}
+      fail-fast: false
+    steps:
+      - name: Set Branch Variable
+        run: |
+          if [ "${{ matrix.repo.name }}" == "equistamp" ]; then
+            echo "branch=dev" >> $GITHUB_ENV
+          else
+            echo "branch=${{ matrix.repo.default_branch }}" >> $GITHUB_ENV
+          fi
+
+      - name: Log Repository Info
+        run: |
+          echo "Processing repository: ${{ matrix.repo.name }}"
+          echo "Branch: ${{ env.branch }}"
+
+      - name: Checkout target repository
+        uses: actions/checkout@v3
+        with:
+          repository: EquiStamp/${{ matrix.repo.name }}
+          token: ${{ env.ADMIN_GITHUB_TOKEN }}
+          path: target_repo
+          ref: ${{ env.branch }}
+          fetch-depth: 0
+
+      - name: Checkout source repository
+        uses: actions/checkout@v3
+        with:
+          repository: EquiStamp/metr-task-template
+          token: ${{ env.ADMIN_GITHUB_TOKEN }}
+          path: source_repo
+
+      - name: Copy issue templates
+        run: |
+          mkdir -p target_repo/.github/
+          rsync -av source_repo/.github/ target_repo/.github/
+
+      - name: Commit and push changes
+        working-directory: target_repo
+        env:
+          GITHUB_TOKEN: ${{ env.ADMIN_GITHUB_TOKEN }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .github
+          if git diff --cached --quiet; then
+            echo "No changes to commit in ${{ matrix.repo.name }}"
+          else
+            git commit -m "Update issue templates"
+            # Pull the latest changes to avoid conflicts
+            git pull origin ${{ env.branch }} --rebase
+            git push origin HEAD:${{ env.branch }}
+          fi
