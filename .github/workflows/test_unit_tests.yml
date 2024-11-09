@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  unit-tests:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,6 @@ jobs:
     - name: Install dependencies if requirements.txt exists
       run: |
         pip install pytest
-        pip install git+https://github.com/METR/vivaria.git@8ce0b1f835b2ef707602a9293d939e9b08af2080#subdirectory=task-standard/python-package
         if [ -f requirements.txt ]; then
           pip install -r requirements.txt
         fi
