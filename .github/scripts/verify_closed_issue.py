@@ -70,16 +70,22 @@ def check_and_update_title_price(issue, usd_rate, token, success_messages, error
         title_price = extract_title_price(issue['title'])
         bonus_price = extract_expected_price(issue['body'])
         time = extract_time(issue['body'])
-        hourly_price = time * usd_rate
+        hourly_price = round(time * usd_rate)
+        paid_price = 0
 
         if hourly_price < bonus_price:
+            paid_price = bonus_price
             bonus_amount = bonus_price - hourly_price
-            success_messages.append(f'Issue completed with bonus. Bonus price: ${bonus_price}, but completed in {time} hours. Bonus amount: ${bonus_amount}')
+            success_messages.append(f'Issue completed with bonus. Bonus price: ${bonus_price}, but completed in {time:.2f} hours. Bonus amount: ${bonus_amount}')
         else:
-            success_messages.append(f'Issue completed without bonus. Total price: {time:.2f} hours * ${usd_rate} = ${round(hourly_price)}')
-            if title_price < hourly_price:
-                print('Updating issue title...')
-                update_github_issue_title_price(issue, hourly_price, token)
+            paid_price = hourly_price
+            success_messages.append(f'Issue completed without bonus. Total price: {time:.2f} hours * ${usd_rate} = ${hourly_price}')
+
+        if title_price != paid_price:
+            print('Updating issue title...')
+            update_github_issue_title_price(issue, paid_price, token)
+            success_messages.append(f'\tUpdated issue title from ${title_price} to ${paid_price}')
+
         return True
     except ValueError as e:
         error_messages.append(str(e))
