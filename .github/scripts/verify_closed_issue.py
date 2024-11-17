@@ -67,8 +67,8 @@ def update_github_issue_title_price(issue, new_price, token):
 def check_and_update_title_price(issue, usd_rate, token, success_messages, error_messages):
     """Check if the title price is lower than the hourly price and update if so."""
     try:
-        title_price = extract_title_price(issue['title'])
-        bonus_price = extract_expected_price(issue['body'])
+        title_price = int(extract_title_price(issue['title']))
+        bonus_price = int(extract_expected_price(issue['body']))
         time = extract_time(issue['body'])
         hourly_price = round(time * usd_rate)
         paid_price = 0
@@ -84,7 +84,7 @@ def check_and_update_title_price(issue, usd_rate, token, success_messages, error
         if title_price != paid_price:
             print('Updating issue title...')
             update_github_issue_title_price(issue, paid_price, token)
-            success_messages.append(f'\tUpdated issue title from ${title_price} to ${paid_price}')
+            success_messages.append(f'Updated issue title from ${title_price} to ${paid_price}')
 
         return True
     except ValueError as e:
