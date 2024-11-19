@@ -3,7 +3,8 @@ from typing import Any
 
 
 def extract_time(issue_body: str) -> float:
-    match = re.search(r'TOTAL TIME SPENT ON THIS ISSUE BY ASSIGNEE =\s*(\d{1,2}:\d{2})', issue_body)
+    issue_body = re.sub(r'\s', '', issue_body.lower())
+    match = re.search(r'totaltimespentonthisissuebyassignee=(\d{1,2}:\d{2})', issue_body)
     try:
         hours, minutes = map(int, match.group(1).split(':'))
         return round((hours + minutes / 60), 2)
@@ -23,7 +24,8 @@ def extract_title_price(issue_title: str) -> float:
 
 
 def extract_expected_price(issue_body: str) -> float:
-    match = re.search(r'\**How much will EquiStamp Pay for Successful Resolution\?\**\n\**USD:\**\s*\$?(\d+\.?\d*)', issue_body)
+    issue_body = re.sub(r'\s', '', issue_body.lower())
+    match = re.search(r'\**howmuchwillequistamppayforsuccessfulresolution\?\**usd:\**\$?(\d+\.?\d*)', issue_body)
     try:
         return float(match.group(1))
     except (AttributeError, ValueError) as e:
