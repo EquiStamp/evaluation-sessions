@@ -18,9 +18,7 @@ jobs:
         python-version: '3.11'
 
     - name: Install dependencies
-      run: |
-        pip install pytest
-        pip install git+https://github.com/METR/vivaria.git#subdirectory=task-standard/python-package
+      run: pip install -r .github/test-requirements.txt
 
     - name: Collect tasks
       run: |

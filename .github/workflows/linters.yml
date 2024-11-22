@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  run-linter:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,4 +22,4 @@ jobs:
       run: pip install pyright
 
     - name: Run tests
-      run: pyright ${{ repo_name }}.py
+      run: pyright ${{ github.event.repository.name }}.py
