@@ -1,6 +1,6 @@
 ---
 name: PR Reviews
-about: Use this template for issues that requires changing code or code infrastructure
+about: Use this template to track the time you're spending reviewing METR PRs
 title: "[DEV][$150] Review PRs time period YYYY-MM-DD to YYYY-MM-DD"
 labels: development,pr-reviews,charge-to-metr
 assignees: ''
