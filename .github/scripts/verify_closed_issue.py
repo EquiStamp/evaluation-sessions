@@ -31,7 +31,7 @@ def check_expected_price(issue, success_messages, error_messages):
         return False
 
 
-def check_labels(issue, success_messages, error_messages):
+def check_charge_labels(issue, success_messages, error_messages):
     """Verify that the issue has exactly one charge-to label."""
     charge_labels = [label for label in issue['labels'] if label.startswith('charge-to-')]
 
@@ -44,6 +44,20 @@ def check_labels(issue, success_messages, error_messages):
         return False
 
     error_messages.append(f'Multiple charge labels found: {charge_labels}')
+    return False
+
+
+def check_assignee(issue, success_messages, error_messages):
+    """Verify that the issue has one and only one assignee."""
+    if len(issue['assignees']) == 1:
+        success_messages.append(f'Assignee found: {issue["assignees"][0]}')
+        return True
+
+    if len(issue['assignees']) == 0:
+        error_messages.append('No assignee found.')
+        return False
+
+    error_messages.append(f'Multiple assignees found: {issue["assignees"]}')
     return False
 
 
@@ -95,14 +109,15 @@ def check_and_update_title_price(issue, usd_rate, token, success_messages, error
 def perform_all_checks(issue, usd_rate, token, success_messages, error_messages):   
     time_ok = check_time(issue, success_messages, error_messages)
     bonus_price_ok = check_expected_price(issue, success_messages, error_messages)
-    labels_ok = check_labels(issue, success_messages, error_messages)
+    labels_ok = check_charge_labels(issue, success_messages, error_messages)
+    assignee_ok = check_assignee(issue, success_messages, error_messages)
 
     if time_ok and bonus_price_ok:
         print('Time and bonus price found, updating price in title...')
         title_ok = check_and_update_title_price(issue, usd_rate, token, success_messages, error_messages)
         if not title_ok:
             return False
-    return time_ok and bonus_price_ok and labels_ok
+    return time_ok and bonus_price_ok and labels_ok and assignee_ok
 
 
 def get_issue_data():
@@ -111,6 +126,7 @@ def get_issue_data():
         'title': os.getenv('ISSUE_TITLE'),
         'body': os.getenv('ISSUE_BODY'),
         'labels': os.getenv('ISSUE_LABELS').split(','),
+        'assignees': os.getenv('ISSUE_ASSIGNEES').split(',') if os.getenv('ISSUE_ASSIGNEES') else [],
         'repo': os.getenv('REPOSITORY')
     }
 
