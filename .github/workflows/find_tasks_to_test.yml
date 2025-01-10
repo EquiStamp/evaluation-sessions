@@ -18,7 +18,11 @@ jobs:
         python-version: '3.11'
 
     - name: Install dependencies
-      run: pip install -r .github/test-requirements.txt
+      run: |
+        pip install -r .github/test-requirements.txt
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
 
     - name: Collect tasks
       run: |
