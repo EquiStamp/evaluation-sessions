@@ -40,7 +40,7 @@ def check_charge_labels(issue, success_messages, error_messages):
         return True
 
     if len(charge_labels) == 0:
-        error_messages.append('No charge label found.')
+        error_messages.append(f'No charge label found: had {len(issue["labels"])} labels.')
         return False
 
     error_messages.append(f'Multiple charge labels found: {charge_labels}')
