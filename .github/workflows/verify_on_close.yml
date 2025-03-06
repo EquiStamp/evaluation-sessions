@@ -26,6 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.EQUISTAMP_ADMIN_GITHUB_SECRET }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPOSITORY: ${{ github.repository }}
+          TASK_TO_AIRTABLE_STATUS: ${{ vars.TASK_TO_AIRTABLE_STATUS }}
         run: |
           python .github/scripts/verify_closed_issue.py
       
