@@ -2,7 +2,6 @@ import os
 import pathlib
 import sys
 from typing import Literal, TypedDict
-from msilib import Table
 from pyairtable import Api, Table
 
 
@@ -165,6 +164,9 @@ def main():
     token = os.getenv('GITHUB_TOKEN')
 
     issue = fetch_issue_custom_fields(issue_number, repo, token)
+
+    if issue.get('status') != os.getenv('TASK_TO_AIRTABLE_STATUS'):
+        finish('Closing issue without updating Airtable', 0)
 
     needed = ['title', 'assignee', 'client', 'project', 'bonus', 'hours']
     missing = [n for n in needed if not issue.get(n)]
