@@ -27,6 +27,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPOSITORY: ${{ github.repository }}
           TASK_TO_AIRTABLE_STATUS: ${{ vars.TASK_TO_AIRTABLE_STATUS }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
         run: |
           python .github/scripts/verify_closed_issue.py
       
