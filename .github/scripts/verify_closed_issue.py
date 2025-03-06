@@ -1,11 +1,9 @@
 import os
 import pathlib
 import sys
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Any
+import requests
 from pyairtable import Api, Table
-
-
-from util.github_graphql import graphql_query
 
 
 AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
@@ -73,6 +71,26 @@ def extract_node(node) -> tuple[str, str | float]:
         value = None
     return CUSTOM_FIELDS.get(field, field), value
         
+
+def graphql_query(query: str, variables: dict[str, Any], token: str) -> dict[str, Any]:
+    response = requests.post(
+        'https://api.github.com/graphql', 
+            headers={
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+        }, 
+        json={
+            'query': query,
+            'variables': variables
+        }
+    )
+    
+    if response.status_code != 200:
+        print(f"Error fetching custom fields: {response.status_code}, {response.text}")
+        return {}
+    
+    return response.json()
+    
 
 def fetch_issue_custom_fields(issue_number: int, repo: str, token: str) -> Issue:
     """Fetch custom fields for a GitHub issue using the GraphQL API.
