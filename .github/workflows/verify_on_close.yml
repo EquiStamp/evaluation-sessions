@@ -25,10 +25,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.EQUISTAMP_ADMIN_GITHUB_SECRET }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
-          ISSUE_ASSIGNEES: ${{ join(github.event.issue.assignees.*.login, ',') }}
           REPOSITORY: ${{ github.repository }}
         run: |
           python .github/scripts/verify_closed_issue.py

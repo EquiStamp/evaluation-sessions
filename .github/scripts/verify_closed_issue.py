@@ -1,156 +1,182 @@
 import os
 import pathlib
-import re
 import sys
-
-import requests
-
-from util.extraction import (extract_expected_price, extract_time,
-                             extract_title_price)
+from typing import Literal, TypedDict
+from msilib import Table
+from pyairtable import Api, Table
 
 
-def check_time(issue, success_messages, error_messages):
-    """Verify the time can spent can be extracted from the issue."""
-    try:
-        time = extract_time(issue['body'])
-        success_messages.append(f'Time spent on issue: {time:.2f} hours')
-        return True
-    except ValueError as e:
-        error_messages.append(str(e))
-        return False
+from util.github_graphql import graphql_query
 
 
-def check_expected_price(issue, success_messages, error_messages):
-    """Verify the expected price can be extracted from the issue."""
-    try:
-        expected_price = extract_expected_price(issue['body'])
-        success_messages.append(f'Expected/bonus price: ${int(expected_price)}')
-        return True
-    except ValueError as e:
-        error_messages.append(str(e))
-        return False
+AIRTABLE_API_KEY = os.getenv('AIRTABLE_API_KEY')
+AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID', 'appv30uH0RVFEwnKR')
+TASK_TABLE_ID = os.getenv('AIRTABLE_TASK_TABLE_ID', 'tblSQTbLaw70lf12Z')
+TASK_IDS = {
+    'title': 'fld561XomUiVxE6oy',
+    'assignee': 'fldklqYMmKOKzqb3v',
+    'hours': 'flddXyIs5GAIqITew',
+    'bonus': 'fldx0SGwC6iANBfnd',
+    'project': 'fldhDjnxH05jnOVeK',
+    'client': 'fldJfcwwQDnpESfNf',
+    'status': 'fldsHPbIyV6A66nXD',  
+    'url': 'fldxAxm072aPu4pEX',
+}
 
 
-def check_charge_labels(issue, success_messages, error_messages):
-    """Verify that the issue has exactly one charge-to label."""
-    charge_labels = [label for label in issue['labels'] if label.startswith('charge-to-')]
-
-    if len(charge_labels) == 1:
-        success_messages.append(f'Charge label found: {charge_labels[0]}')
-        return True
-
-    if len(charge_labels) == 0:
-        error_messages.append(f'No charge label found: had {len(issue["labels"])} labels.')
-        return False
-
-    error_messages.append(f'Multiple charge labels found: {charge_labels}')
-    return False
+CUSTOM_FIELDS = {
+    "project/task type": "project",
+    "bonus (usd)": "bonus",
+}
 
 
-def check_assignee(issue, success_messages, error_messages):
-    """Verify that the issue has one and only one assignee."""
-    if len(issue['assignees']) == 1:
-        success_messages.append(f'Assignee found: {issue["assignees"][0]}')
-        return True
+Status = Literal[
+    'Todo', 'In progress', 'Done', 'Blocked', 'Backlog', 'Scoping', 'Pricing',
+    'Ready for Action', 'In Progress', 'Urgent', 'Internal Review', 'External Review',
+    'Appproved for Payment', 'Paid & Done', 'Closed'
+]
+class Issue(TypedDict):
+    title: str
+    assignee: str
+    status: Status
+    client: str
+    project: str
+    bonus: float
+    hours: float
+    url: str
 
-    if len(issue['assignees']) == 0:
-        error_messages.append('No assignee found.')
-        return False
 
-    error_messages.append(f'Multiple assignees found: {issue["assignees"]}')
-    return False
+def get_table(airtable_api_key: str, base_id: str, table_id: str) -> Table:
+    api = Api(airtable_api_key)
+    return api.table(base_id, table_id)
 
 
-def update_github_issue_title_price(issue, new_price, token):
-    """Edit the issue title on GitHub to the given price."""
-    updated_title = re.sub(r'\[\$\d+\.?\d*\]', f'[${round(new_price)}]', issue['title'])
+def add_task_to_airtable(table: Table, task_data: dict) -> dict:
+    fields = {id_: value for col, value in task_data.items() if (id_ := TASK_IDS.get(col))}
+    return table.create(fields)
 
-    url = f'https://api.github.com/repos/{issue["repo"]}/issues/{issue["number"]}'
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-    response = requests.patch(url, headers=headers, json={'title': updated_title})
 
-    if response.status_code == 200:
-        print(f'Successfully updated issue title to: {updated_title}')
+def extract_node(node) -> tuple[str, str | float]:
+    field = node.get('field', {}).get('name', '').lower()
+    if (name_nodes := node.get('name')) and 'field' in node:
+        value = name_nodes
+    elif 'text' in node:
+        value = node['text']
+    elif 'number' in node:
+        value = node['number']
+    elif "users" in node:
+        field, value = "assignee", [user['login'] for user in node['users']['nodes']][0]
+    elif labels := node.get('labels'):
+        field, value = "labels", [label['name'] for label in labels['nodes'] if label['name'].startswith('charge-to-')][0]
+    elif repository := node.get('repository'):
+        field, value = "repo", f"{repository['owner']['login']}/{repository['name']}"
     else:
-        print(f'Failed to update issue title. Status code: {response.status_code}, Response: {response.text}')
+        value = None
+    return CUSTOM_FIELDS.get(field, field), value
+        
 
-
-def check_and_update_title_price(issue, usd_rate, token, success_messages, error_messages):
-    """Check if the title price is lower than the hourly price and update if so."""
-    try:
-        title_price = int(extract_title_price(issue['title']))
-        bonus_price = int(extract_expected_price(issue['body']))
-        time = extract_time(issue['body'])
-        hourly_price = round(time * usd_rate)
-        paid_price = 0
-
-        if hourly_price < bonus_price:
-            paid_price = bonus_price
-            bonus_amount = bonus_price - hourly_price
-            success_messages.append(f'Issue completed with bonus. Bonus price: ${bonus_price}, but completed in {time:.2f} hours. Bonus amount: ${bonus_amount}')
-        else:
-            paid_price = hourly_price
-            success_messages.append(f'Issue completed without bonus. Total price: {time:.2f} hours * ${usd_rate} = ${hourly_price}')
-
-        if title_price != paid_price:
-            print('Updating issue title...')
-            update_github_issue_title_price(issue, paid_price, token)
-            success_messages.append(f'Updated issue title from ${title_price} to ${paid_price}')
-
-        return True
-    except ValueError as e:
-        error_messages.append(str(e))
-        return False
-
-
-def perform_all_checks(issue, usd_rate, token, success_messages, error_messages):   
-    time_ok = check_time(issue, success_messages, error_messages)
-    bonus_price_ok = check_expected_price(issue, success_messages, error_messages)
-    labels_ok = check_charge_labels(issue, success_messages, error_messages)
-    assignee_ok = check_assignee(issue, success_messages, error_messages)
-
-    if time_ok and bonus_price_ok:
-        print('Time and bonus price found, updating price in title...')
-        title_ok = check_and_update_title_price(issue, usd_rate, token, success_messages, error_messages)
-        if not title_ok:
-            return False
-    return time_ok and bonus_price_ok and labels_ok and assignee_ok
-
-
-def get_issue_data():
-    return {
-        'number': os.getenv('ISSUE_NUMBER'),
-        'title': os.getenv('ISSUE_TITLE'),
-        'body': os.getenv('ISSUE_BODY'),
-        'labels': os.getenv('ISSUE_LABELS').split(','),
-        'assignees': os.getenv('ISSUE_ASSIGNEES').split(',') if os.getenv('ISSUE_ASSIGNEES') else [],
-        'repo': os.getenv('REPOSITORY')
+def fetch_issue_custom_fields(issue_number: int, repo: str, token: str) -> Issue:
+    """Fetch custom fields for a GitHub issue using the GraphQL API.
+    
+    Args:
+        issue_number: The issue number
+        repo: The repository in format 'owner/repo'
+        token: GitHub API token
+        
+    Returns:
+        Dictionary containing custom fields for the issue
+    """
+    owner, repo_name = repo.split('/')
+    
+    # GraphQL query to fetch issue with project items and their field values
+    query = """
+    query($owner: String!, $repo: String!, $issueNumber: Int!) {
+      repository(owner: $owner, name: $repo) {
+        issue(number: $issueNumber) {
+          id
+          title
+          url
+          state
+          projectItems(first: 10) {
+            nodes {
+              id
+              project { id title url number }
+              fieldValues(first: 50) {
+                nodes {
+                  ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2SingleSelectField { name id } } }
+                  ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2Field { name id } } }
+                  ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2Field { name id } } }
+                  ... on ProjectV2ItemFieldDateValue { date field { ... on ProjectV2Field { name id } } }
+                  ... on ProjectV2ItemFieldIterationValue { title startDate duration field { ... on ProjectV2IterationField { name id } } }
+                  ... on ProjectV2ItemFieldMilestoneValue { milestone { title dueOn } field { ... on ProjectV2Field { name id } } }
+                  ... on ProjectV2ItemFieldRepositoryValue { repository { name owner { login } } field { ... on ProjectV2Field { name id } } }
+                  ... on ProjectV2ItemFieldUserValue { 
+                      users(first: 10) { nodes { login name } }
+                      field { ... on ProjectV2Field { name id } }
+                  }
+                  ... on ProjectV2ItemFieldLabelValue {
+                    labels(first: 10) { nodes { name color } }
+                    field { ... on ProjectV2Field { name id } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
+    """
+
+    variables = {
+        'owner': owner,
+        'repo': repo_name,
+        'issueNumber': int(issue_number)
+    }
+
+    data = graphql_query(query, variables, token)
+    
+    issue = data['data']['repository']['issue']
+
+    nodes = issue['projectItems']['nodes'][0]['fieldValues']['nodes']
+    data = dict(extract_node(n) for n in nodes) | {
+        'url': issue['url'],
+        'state': issue['state'],
+        'title': issue['title']
+    }
+
+    if time := data.get('hours taken'):
+        hours, minutes = map(float, time.split(':'))    
+
+        data['hours'] = hours + minutes / 60
+        data['minutes'] = minutes + hours * 60
+    
+    return data
+
+
+def finish(message: str, status: int = 0):
+    print(message)
+    pathlib.Path('error_messages.txt').write_text(message, encoding='utf-8')
+    sys.exit(status)
 
 
 def main():
-    issue = get_issue_data()
+    issue_number = os.getenv('ISSUE_NUMBER')
+    repo = os.getenv('REPOSITORY')
     token = os.getenv('GITHUB_TOKEN')
-    usd_rate = 50
-    success_messages = []
-    error_messages = []
 
-    checks_ok = perform_all_checks(issue, usd_rate, token, success_messages, error_messages)
+    issue = fetch_issue_custom_fields(issue_number, repo, token)
 
-    if success_messages:
-        success_messages.insert(0, 'These checks passed:')
-    pathlib.Path('success_messages.txt').write_text('\n- '.join(success_messages), encoding='utf-8')
+    needed = ['title', 'assignee', 'client', 'project', 'bonus', 'hours']
+    missing = [n for n in needed if not issue.get(n)]
 
-    if checks_ok:
-        print('Checks passed, issue closed successfully!')
-    else:
-        print('Checks failed, reopening issue...')
-        error_messages.insert(0, 'Reopening issue due to failed verification:')
-        pathlib.Path('error_messages.txt').write_text('\n- '.join(error_messages), encoding='utf-8')
-        sys.exit(1)
+    if missing:
+        finish(f'Missing fields: {sorted(missing)}', 1)
+
+    table = get_table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, TASK_TABLE_ID)
+    if not add_task_to_airtable(table, issue):
+        finish('Failed to add task to Airtable', 1)
+
+    finish('Issue pushed to Airtable successfully')
 
 
 if __name__ == '__main__':
