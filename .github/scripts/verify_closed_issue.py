@@ -172,7 +172,8 @@ def fetch_issue_custom_fields(issue_number: int, repo: str, token: str) -> Issue
 
 def finish(message: str, status: int = 0):
     print(message)
-    pathlib.Path('error_messages.txt').write_text(message, encoding='utf-8')
+    filename = 'error_messages.txt' if status else 'success_messages.txt'
+    pathlib.Path(filename).write_text(message, encoding='utf-8')
     sys.exit(status)
 
 
@@ -183,7 +184,8 @@ def main():
 
     issue = fetch_issue_custom_fields(issue_number, repo, token)
 
-    if issue.get('status') != os.getenv('TASK_TO_AIRTABLE_STATUS'):
+    if issue.get('status') != os.getenv('TASK_TO_AIRTABLE_STATUS', '').strip():
+        print(f"Issue status {issue.get('status')} does not match expected status {os.getenv('TASK_TO_AIRTABLE_STATUS')}")
         finish('Closing issue without updating Airtable', 0)
 
     needed = ['title', 'assignee', 'client', 'project', 'bonus', 'hours']
