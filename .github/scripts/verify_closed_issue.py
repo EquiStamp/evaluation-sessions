@@ -172,8 +172,15 @@ def fetch_issue_custom_fields(issue_number: int, repo: str, token: str) -> Issue
 
 def finish(message: str, status: int = 0):
     print(message)
-    filename = 'error_messages.txt' if status else 'success_messages.txt'
-    pathlib.Path(filename).write_text(message, encoding='utf-8')
+    if status:
+        error_message = message
+        success_message = ''
+    else:
+        error_message = ''
+        success_message = message
+    
+    pathlib.Path('error_messages.txt').write_text(error_message, encoding='utf-8')
+    pathlib.Path('success_messages.txt').write_text(success_message, encoding='utf-8')
     sys.exit(status)
 
 
