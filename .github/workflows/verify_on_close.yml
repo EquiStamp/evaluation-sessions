@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests
+          pip install requests pyairtable==3.0.2
 
       - name: Run Issue Check Script
         env:
