@@ -69,7 +69,7 @@ def extract_node(node) -> tuple[str, str | float]:
         field, value = "repo", f"{repository['owner']['login']}/{repository['name']}"
     else:
         value = None
-    return CUSTOM_FIELDS.get(field, field), value
+    return CUSTOM_FIELDS.get(field, field), value.replace('"', '')
         
 
 def graphql_query(query: str, variables: dict[str, Any], token: str) -> dict[str, Any]:
@@ -162,7 +162,11 @@ def fetch_issue_custom_fields(issue_number: int, repo: str, token: str) -> Issue
     }
 
     if time := data.get('hours taken'):
-        hours, minutes = map(float, time.split(':'))    
+        if ':' in time:
+            hours, minutes = map(float, time.split(':'))    
+        else:
+            hours = float(time)
+            minutes = 0
 
         data['hours'] = hours + minutes / 60
         data['minutes'] = minutes + hours * 60
