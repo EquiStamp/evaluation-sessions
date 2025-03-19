@@ -64,9 +64,10 @@ def extract_node(node) -> tuple[str, str | float]:
     elif "users" in node:
         field, value = "assignee", [user['login'] for user in node['users']['nodes']][0]
     elif labels := node.get('labels'):
-        field, value = "labels", [label['name'] for label in labels['nodes'] if label['name'].startswith('charge-to-')][0]
-        if not value:
-            raise ValueError('No Charge Label Found')
+        charge_labels = [label['name'] for label in labels['nodes'] if label['name'].startswith('charge-to-')]
+        if len(charge_labels) != 1:
+            raise ValueError('Must be exactly one charge label.')
+        field, value = "labels", charge_labels[0]
     elif repository := node.get('repository'):
         field, value = "repo", f"{repository['owner']['login']}/{repository['name']}"
     else:
