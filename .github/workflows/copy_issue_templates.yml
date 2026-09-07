@@ -58,7 +58,7 @@ jobs:
           echo "Branch: ${{ env.branch }}"
 
       - name: Checkout target repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: EquiStamp/${{ matrix.repo.name }}
           token: ${{ env.ADMIN_GITHUB_TOKEN }}
@@ -67,7 +67,7 @@ jobs:
           fetch-depth: 0
 
       - name: Checkout source repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: EquiStamp/metr-task-template
           token: ${{ env.ADMIN_GITHUB_TOKEN }}

@@ -19,12 +19,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
       with:
         path: ${{ github.event.repository.name }}
 
     - name: Checkout task standard repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
       with:
         repository: METR/task-standard
         path: task-standard
