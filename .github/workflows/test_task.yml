@@ -30,7 +30,7 @@ jobs:
         path: task-standard
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v7
       with:
         node-version: '18'
 
